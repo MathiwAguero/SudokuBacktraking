@@ -1,6 +1,6 @@
 ﻿namespace SudokuBacktraking;
 
-partial class SudokuFomr
+partial class SudokuForm
 {
     /// <summary>
     ///  Required designer variable.

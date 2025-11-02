@@ -61,9 +61,10 @@ public class SudokuSolver
 
     public bool Solve(int[,] board)
     {
-       
+        if (!IsValidBoard(board))
+            return false; // Tablero inválido desde el inicio
+    
         return SolveSudoku(board);
-        
     }
     private bool IsSafe(int[,] board, int row, int col, int num)
     {
@@ -95,5 +96,28 @@ public class SudokuSolver
         }
 
         return false; 
+    }
+    public bool IsValidBoard(int[,] board)
+    {
+        for (int row = 0; row < 9; row++)
+        {
+            for (int col = 0; col < 9; col++)
+            {
+                if (board[row, col] != 0)
+                {
+                    int num = board[row, col];
+                    board[row, col] = 0; // Temporalmente vaciar
+                
+                    if (!IsSafe(board, row, col, num))
+                    {
+                        board[row, col] = num; // Restaurar
+                        return false;
+                    }
+                
+                    board[row, col] = num; // Restaurar
+                }
+            }
+        }
+        return true;
     }
 }

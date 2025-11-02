@@ -8,6 +8,7 @@ namespace SudokuBacktraking
     public partial class SudokuForm : Form
     {
         private TextBox[,] cells = new TextBox[9, 9];
+        private Panel gridContainer; // Contenedor para dibujar bordes gruesos
         private TableLayoutPanel gridPanel;
         private Button btnSolve;
         private Button btnClear;
@@ -25,7 +26,7 @@ namespace SudokuBacktraking
         private void SetupComponent()
         {
             this.Text = "Sudoku Solver - Backtracking";
-            this.Size = new Size(650, 720);
+            this.Size = new Size(650, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -52,15 +53,24 @@ namespace SudokuBacktraking
                 Dock = DockStyle.Top
             };
 
-            // Grid Panel (Cuadrícula 9x9)
+            // Contenedor con Paint personalizado para bordes gruesos
+            gridContainer = new Panel
+            {
+                Size = new Size(550, 550),
+                Location = new Point(50, 60),
+                BackColor = Color.White
+            };
+            gridContainer.Paint += GridContainer_Paint;
+
+            // Grid Panel (Cuadrícula 9x9) - SIN bordes propios
             gridPanel = new TableLayoutPanel
             {
                 RowCount = 9,
                 ColumnCount = 9,
                 Size = new Size(540, 540),
-                Location = new Point(55, 60),
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
-                BackColor = Color.Black
+                Location = new Point(5, 5), // Dentro del contenedor
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+                BackColor = Color.Transparent
             };
 
             // Configurar filas y columnas
@@ -82,7 +92,7 @@ namespace SudokuBacktraking
                         MaxLength = 1,
                         Dock = DockStyle.Fill,
                         BorderStyle = BorderStyle.None,
-                        BackColor = GetCellBackColor(row, col),
+                        BackColor = Color.White,
                         ForeColor = Color.FromArgb(52, 73, 94),
                         Tag = new Point(row, col)
                     };
@@ -91,20 +101,23 @@ namespace SudokuBacktraking
                     cells[row, col].KeyPress += Cell_KeyPress;
                     cells[row, col].TextChanged += Cell_TextChanged;
                     cells[row, col].Enter += Cell_Enter;
+                    cells[row, col].Paint += Cell_Paint; // Para bordes personalizados
 
                     gridPanel.Controls.Add(cells[row, col], col, row);
                 }
             }
 
+            gridContainer.Controls.Add(gridPanel);
+
             // Panel de botones
             Panel buttonPanel = new Panel
             {
-                Height = 50,
+                Height = 70,
                 Dock = DockStyle.Bottom
             };
 
-            btnSolve = CreateButton("Resolver", new Point(170, 10), Color.FromArgb(46, 204, 113));
-            btnClear = CreateButton("Limpiar", new Point(310, 10), Color.FromArgb(231, 76, 60));
+            btnSolve = CreateButton("Resolver", new Point(150, 17), Color.FromArgb(46, 204, 113));
+            btnClear = CreateButton("Limpiar", new Point(320, 17), Color.FromArgb(231, 76, 60));
 
             btnSolve.Click += BtnSolve_Click;
             btnClear.Click += BtnClear_Click;
@@ -121,15 +134,68 @@ namespace SudokuBacktraking
                 TextAlign = ContentAlignment.MiddleCenter,
                 Height = 30,
                 Width = 600,
-                Location = new Point(25, 610)
+                Location = new Point(25, 620)
             };
 
             // Agregar controles al formulario
             mainPanel.Controls.Add(lblTitle);
-            mainPanel.Controls.Add(gridPanel);
+            mainPanel.Controls.Add(gridContainer);
             mainPanel.Controls.Add(lblStatus);
             mainPanel.Controls.Add(buttonPanel);
             this.Controls.Add(mainPanel);
+        }
+
+        // Dibujar bordes gruesos para las cajas 3x3
+        private void GridContainer_Paint(object sender, PaintEventArgs e)
+        {
+            using (Pen thickPen = new Pen(Color.Black, 3))
+            using (Pen thinPen = new Pen(Color.Black, 1))
+            {
+                int cellSize = 60;
+                
+                // Bordes gruesos (cajas 3x3)
+                for (int i = 0; i <= 3; i++)
+                {
+                    int pos = 5 + i * cellSize * 3;
+                    // Líneas verticales gruesas
+                    e.Graphics.DrawLine(thickPen, pos, 5, pos, 545);
+                    // Líneas horizontales gruesas
+                    e.Graphics.DrawLine(thickPen, 5, pos, 545, pos);
+                }
+
+                // Bordes finos (celdas individuales)
+                for (int i = 1; i < 9; i++)
+                {
+                    if (i % 3 != 0) // Saltar las que ya son gruesas
+                    {
+                        int pos = 5 + i * cellSize;
+                        // Líneas verticales finas
+                        e.Graphics.DrawLine(thinPen, pos, 5, pos, 545);
+                        // Líneas horizontales finas
+                        e.Graphics.DrawLine(thinPen, 5, pos, 545, pos);
+                    }
+                }
+            }
+        }
+
+        // Bordes internos de las celdas (opcional, para mayor claridad)
+        private void Cell_Paint(object sender, PaintEventArgs e)
+        {
+            TextBox cell = (TextBox)sender;
+            Point pos = (Point)cell.Tag;
+            int row = pos.X;
+            int col = pos.Y;
+
+            using (Pen pen = new Pen(Color.LightGray, 1))
+            {
+                // Borde derecho fino
+                if (col < 8 && (col + 1) % 3 != 0)
+                    e.Graphics.DrawLine(pen, cell.Width - 1, 0, cell.Width - 1, cell.Height);
+                
+                // Borde inferior fino
+                if (row < 8 && (row + 1) % 3 != 0)
+                    e.Graphics.DrawLine(pen, 0, cell.Height - 1, cell.Width, cell.Height - 1);
+            }
         }
 
         private Button CreateButton(string text, Point location, Color backColor)
@@ -137,26 +203,14 @@ namespace SudokuBacktraking
             return new Button
             {
                 Text = text,
-                Size = new Size(120, 35),
+                Size = new Size(140, 45),
                 Location = location,
                 BackColor = backColor,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 10, FontStyle.Bold),
+                Font = new Font("Arial", 11, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
-        }
-
-        private Color GetCellBackColor(int row, int col)
-        {
-            int boxRow = row / 3;
-            int boxCol = col / 3;
-            
-            // Alternar colores para distinguir las cajas 3x3
-            if ((boxRow + boxCol) % 2 == 0)
-                return Color.White;
-            else
-                return Color.FromArgb(236, 240, 241);
         }
 
         // ============================================
@@ -165,7 +219,6 @@ namespace SudokuBacktraking
 
         private void Cell_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Solo permitir números 1-9, backspace y delete
             if (!char.IsControl(e.KeyChar) && (e.KeyChar < '1' || e.KeyChar > '9'))
             {
                 e.Handled = true;
@@ -177,7 +230,6 @@ namespace SudokuBacktraking
         {
             TextBox cell = (TextBox)sender;
             
-            // Validar que solo contenga números 1-9
             if (cell.Text.Length > 0)
             {
                 if (cell.Text[0] < '1' || cell.Text[0] > '9')
@@ -201,10 +253,8 @@ namespace SudokuBacktraking
         {
             try
             {
-                // 1. Obtener el tablero de la UI
                 int[,] board = GetBoardFromUI();
 
-                // 2. Verificar que haya al menos un número
                 if (!HasAnyNumber(board))
                 {
                     lblStatus.Text = "Debe ingresar al menos un número inicial";
@@ -216,17 +266,14 @@ namespace SudokuBacktraking
                     return;
                 }
 
-                // 3. Guardar celdas iniciales para diferenciarlas después
                 bool[,] initialCells = GetInitialCellsMap(board);
 
-                // 4. Resolver el Sudoku (sin validaciones previas)
                 lblStatus.Text = "Resolviendo con backtracking...";
                 lblStatus.ForeColor = Color.FromArgb(243, 156, 18);
                 Application.DoEvents();
 
                 if (solver.Solve(board))
                 {
-                    // 5. Mostrar solución
                     ShowSolution(board, initialCells);
                     lblStatus.Text = "¡Sudoku resuelto! El backtracking encontró la solución";
                     lblStatus.ForeColor = Color.FromArgb(46, 204, 113);
@@ -331,21 +378,20 @@ namespace SudokuBacktraking
                 {
                     cells[i, j].Text = board[i, j].ToString();
 
-                    // Diferenciar celdas iniciales de las resueltas
                     if (initialCells[i, j])
                     {
-                        // Números iniciales: negro y bold
                         cells[i, j].ForeColor = Color.FromArgb(52, 73, 94);
                         cells[i, j].Font = new Font("Arial", 20, FontStyle.Bold);
                         cells[i, j].ReadOnly = true;
                     }
                     else
                     {
-                        // Números calculados por backtracking: azul
                         cells[i, j].ForeColor = Color.FromArgb(52, 152, 219);
                         cells[i, j].Font = new Font("Arial", 20, FontStyle.Regular);
                         cells[i, j].ReadOnly = true;
                     }
+                    
+                    cells[i, j].Invalidate(); // Redibujar bordes
                 }
             }
         }
@@ -360,7 +406,8 @@ namespace SudokuBacktraking
                     cells[i, j].ReadOnly = false;
                     cells[i, j].ForeColor = Color.FromArgb(52, 73, 94);
                     cells[i, j].Font = new Font("Arial", 20, FontStyle.Bold);
-                    cells[i, j].BackColor = GetCellBackColor(i, j);
+                    cells[i, j].BackColor = Color.White;
+                    cells[i, j].Invalidate(); // Redibujar bordes
                 }
             }
         }

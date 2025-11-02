@@ -62,7 +62,7 @@ public class SudokuSolver
     public bool Solve(int[,] board)
     {
         if (!IsValidBoard(board))
-            return false; // Tablero inválido desde el inicio
+            return false; 
     
         return SolveSudoku(board);
     }
@@ -106,15 +106,15 @@ public class SudokuSolver
                 if (board[row, col] != 0)
                 {
                     int num = board[row, col];
-                    board[row, col] = 0; // Temporalmente vaciar
+                    board[row, col] = 0; 
                 
                     if (!IsSafe(board, row, col, num))
                     {
-                        board[row, col] = num; // Restaurar
+                        board[row, col] = num; 
                         return false;
                     }
                 
-                    board[row, col] = num; // Restaurar
+                    board[row, col] = num; 
                 }
             }
         }
